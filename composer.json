@@ -1,0 +1,21 @@
+{
+    "name": "carry0987/sharp",
+    "description": "A PHP library for generating signed and encrypted URLs for image processing with Sharp-API, using AES-256-CBC and HMAC-SHA256",
+    "type": "library",
+    "require": {
+        "php": ">=7.4"
+    },
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "carry0987\\Sharp\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "carry0987"
+        }
+    ],
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}

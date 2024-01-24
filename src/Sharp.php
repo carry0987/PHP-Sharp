@@ -28,14 +28,19 @@ class Sharp
      * @param string $originalImageUrl The original URL of the image.
      * @param int $weight The weight of the image.
      * @param int $height The height of the image.
+     * @param string|null $suffix The suffix of the image.
      * @return string The signed encrypted URL.
      * @throws SharpException If encryption fails or binary signature cannot be generated.
      */
-    public function generateEncryptedUrl(string $originalImageUrl, int $weight = 0, int $height = 0)
+    public function generateEncryptedUrl(string $originalImageUrl, int $weight = 0, int $height = 0, string $suffix = null)
     {
         $encryptedBinaryUrl = self::encryptData($originalImageUrl, $this->sourceKey);
         $encryptedUrl = HTTPUtil::base64UrlEncode($encryptedBinaryUrl);
-        $encryptedPath = "/rs:{$weight}:{$height}/enc/{$encryptedUrl}";
+        $encryptedPath = "/rs:{$weight}:{$height}";
+        if ($suffix !== null) {
+            $encryptedUrl .= ":{$suffix}";
+        }
+        $encryptedPath .= "/enc/{$encryptedUrl}";
 
         $binarySignature = hash_hmac('sha256', $this->signatureSalt.$encryptedPath, $this->signatureKey, true);
         if ($binarySignature === false) {

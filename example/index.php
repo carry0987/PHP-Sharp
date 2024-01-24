@@ -12,6 +12,7 @@ $imageEncryptor = new Sharp($signatureKey, $signatureSalt, $sourceKey);
 $originalImageUrl = 'https://i.imgur.com/awglyHB.jpg';
 
 try {
+    $imageEncryptor->setWidth(100)->setHeight(0)->setSuffix('_large');
     $signedUrl = $imageEncryptor->generateEncryptedUrl($originalImageUrl);
     echo 'http://127.0.0.1:3000' . $signedUrl;
 } catch (Exception $e) {

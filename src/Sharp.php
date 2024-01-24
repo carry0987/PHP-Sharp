@@ -9,6 +9,14 @@ class Sharp
     protected $signatureKey;
     protected $signatureSalt;
     protected $sourceKey;
+    protected $imageOption = [
+        'width' => 0,
+        'height' => 0,
+        'suffix' => null
+    ];
+
+    const ENCRYPT_ALGORITHM = 'sha256';
+    const CIPHER = 'aes-256-cbc';
 
     /**
      * Sharp constructor.
@@ -24,25 +32,56 @@ class Sharp
     }
 
     /**
+     * Set the width of the image.
+     * @param int $width 
+     * @return $this 
+     */
+    public function setWidth(int $width)
+    {
+        $this->imageOption['width'] = $width;
+
+        return $this;
+    }
+
+    /**
+     * Set the height of the image.
+     * @param int $height 
+     * @return $this 
+     */
+    public function setHeight(int $height)
+    {
+        $this->imageOption['height'] = $height;
+
+        return $this;
+    }
+
+    /**
+     * Set the suffix of the image.
+     * @param string $suffix The suffix of the image.
+     * @return $this
+     */
+    public function setSuffix(string $suffix)
+    {
+        $this->imageOption['suffix'] = $suffix;
+
+        return $this;
+    }
+
+    /**
      * Generate an encrypted URL to be used with Sharp-API.
      * @param string $originalImageUrl The original URL of the image.
-     * @param int $weight The weight of the image.
-     * @param int $height The height of the image.
-     * @param string|null $suffix The suffix of the image.
      * @return string The signed encrypted URL.
      * @throws SharpException If encryption fails or binary signature cannot be generated.
      */
-    public function generateEncryptedUrl(string $originalImageUrl, int $weight = 0, int $height = 0, string $suffix = null)
+    public function generateEncryptedUrl(string $originalImageUrl)
     {
         $encryptedBinaryUrl = self::encryptData($originalImageUrl, $this->sourceKey);
         $encryptedUrl = HTTPUtil::base64UrlEncode($encryptedBinaryUrl);
-        $encryptedPath = "/rs:{$weight}:{$height}";
-        if ($suffix !== null) {
-            $encryptedUrl .= ":{$suffix}";
-        }
-        $encryptedPath .= "/enc/{$encryptedUrl}";
+        $encryptedPath = '/rs:'.implode(':', $this->imageOption);
+        $encryptedPath = rtrim($encryptedPath, ':');
+        $encryptedPath .= '/enc/'.$encryptedUrl;
 
-        $binarySignature = hash_hmac('sha256', $this->signatureSalt.$encryptedPath, $this->signatureKey, true);
+        $binarySignature = hash_hmac(self::ENCRYPT_ALGORITHM, $this->signatureSalt.$encryptedPath, $this->signatureKey, true);
         if ($binarySignature === false) {
             throw new SharpException('Could not generate binary signature.');
         }
@@ -60,8 +99,8 @@ class Sharp
      */
     private static function encryptData(string $data, string $key)
     {
-        $iv = openssl_random_pseudo_bytes(openssl_cipher_iv_length('aes-256-cbc'));
-        $encrypted = openssl_encrypt($data, 'aes-256-cbc', $key, OPENSSL_RAW_DATA, $iv);
+        $iv = openssl_random_pseudo_bytes(openssl_cipher_iv_length(self::CIPHER));
+        $encrypted = openssl_encrypt($data, self::CIPHER, $key, OPENSSL_RAW_DATA, $iv);
         if ($encrypted === false) {
             throw new SharpException('Encryption failed.');
         }

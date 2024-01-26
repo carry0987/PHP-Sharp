@@ -14,6 +14,7 @@ class Sharp
         'height' => 0,
         'suffix' => null
     ];
+    protected $format = null;
 
     const ENCRYPT_ALGORITHM = 'sha256';
     const CIPHER = 'aes-256-cbc';
@@ -60,9 +61,24 @@ class Sharp
      * @param string $suffix The suffix of the image.
      * @return $this
      */
-    public function setSuffix(string $suffix)
+    public function setSuffix(string $suffix = null)
     {
         $this->imageOption['suffix'] = $suffix;
+
+        return $this;
+    }
+
+    /**
+     * Set the image format
+     * @param string $format The format of the image.
+     * @return $this
+     */
+    public function setFormat(string $format = null)
+    {
+        if ($format !== null) {
+            $format = strtolower($format);
+        }
+        $this->format = $format;
 
         return $this;
     }
@@ -79,7 +95,8 @@ class Sharp
         $encryptedUrl = HTTPUtil::base64UrlEncode($encryptedBinaryUrl);
         $encryptedPath = '/rs:'.implode(':', $this->imageOption);
         $encryptedPath = rtrim($encryptedPath, ':');
-        $encryptedPath .= '/enc/'.$encryptedUrl;
+        $encryptedPath .= '/enc/'.$encryptedUrl.'/'.$this->format;
+        $encryptedPath = rtrim($encryptedPath, '/');
 
         $binarySignature = hash_hmac(self::ENCRYPT_ALGORITHM, $this->signatureSalt.$encryptedPath, $this->signatureKey, true);
         if ($binarySignature === false) {

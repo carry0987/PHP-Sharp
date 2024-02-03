@@ -17,7 +17,7 @@ class Sharp
     protected $format = null;
 
     const ENCRYPT_ALGORITHM = 'sha256';
-    const CIPHER = 'aes-256-cbc';
+    const CIPHER = 'aes-256-gcm';
 
     /**
      * Sharp constructor.
@@ -111,17 +111,28 @@ class Sharp
      * Encrypts the given data with the specified key.
      * @param string $data The data to be encrypted.
      * @param string $key The encryption key.
-     * @return string The encrypted data.
+     * @return string The encrypted data with the authentication tag appended.
      * @throws SharpException If encryption fails.
      */
     private static function encryptData(string $data, string $key)
     {
         $iv = openssl_random_pseudo_bytes(openssl_cipher_iv_length(self::CIPHER));
-        $encrypted = openssl_encrypt($data, self::CIPHER, $key, OPENSSL_RAW_DATA, $iv);
+        $tag = ''; // Initialize the authentication tag variable
+        $tagLength = 16; // The standard tag length for AES-GCM is 16 bytes
+        $encrypted = openssl_encrypt(
+            $data,
+            self::CIPHER,
+            $key,
+            OPENSSL_RAW_DATA,
+            $iv,
+            $tag,
+            '', // Additional Authenticated Data, not used here
+            $tagLength
+        );
         if ($encrypted === false) {
             throw new SharpException('Encryption failed.');
         }
 
-        return $iv.$encrypted;
+        return $iv.$encrypted.$tag;
     }
 }

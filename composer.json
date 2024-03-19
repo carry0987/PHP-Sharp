@@ -3,7 +3,8 @@
     "description": "A PHP library for generating signed and encrypted URLs for image processing with Sharp-API, using AES-256-GCM and HMAC-SHA256",
     "type": "library",
     "require": {
-        "php": ">=7.4"
+        "php": ">=7.4",
+        "carry0987/hash": "^1.0"
     },
     "license": "MIT",
     "autoload": {

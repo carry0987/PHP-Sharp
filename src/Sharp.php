@@ -1,14 +1,12 @@
 <?php
 namespace carry0987\Sharp;
 
-use carry0987\Sharp\Utils\HTTPUtil;
+use carry0987\Hash\Hash;
 use carry0987\Sharp\Exceptions\SharpException;
 
 class Sharp
 {
-    protected $signatureKey;
-    protected $signatureSalt;
-    protected $sourceKey;
+    protected Hash $hash;
     protected $imageOption = [
         'width' => 0,
         'height' => 0,
@@ -27,9 +25,10 @@ class Sharp
      */
     public function __construct(string $signatureKey, string $signatureSalt, string $sourceKey)
     {
-        $this->signatureKey = hex2bin($signatureKey);
-        $this->signatureSalt = hex2bin($signatureSalt);
-        $this->sourceKey = hex2bin($sourceKey);
+        $this->hash = new Hash($signatureKey, $signatureSalt);
+        $this->hash->setSourceKey($sourceKey);
+        $this->hash->setEncryptAlgorithm(self::ENCRYPT_ALGORITHM);
+        $this->hash->setCipher(self::CIPHER);
     }
 
     /**
@@ -91,48 +90,14 @@ class Sharp
      */
     public function generateEncryptedUrl(string $originalImageUrl)
     {
-        $encryptedBinaryUrl = self::encryptData($originalImageUrl, $this->sourceKey);
-        $encryptedUrl = HTTPUtil::base64UrlEncode($encryptedBinaryUrl);
-        $encryptedPath = '/rs:'.implode(':', $this->imageOption);
-        $encryptedPath = rtrim($encryptedPath, ':');
-        $encryptedPath .= '/enc/'.$encryptedUrl.'/'.$this->format;
-        $encryptedPath = rtrim($encryptedPath, '/');
+        $this->hash->setPathFormatter(function ($path) {
+            $encryptedPath = '/rs:'.implode(':', $this->imageOption);
+            $encryptedPath = rtrim($encryptedPath, ':');
+            $encryptedPath .= '/enc/'.$path.'/'.$this->format;
+            $encryptedPath = rtrim($encryptedPath, '/');
+            return $encryptedPath;
+        });
 
-        $binarySignature = hash_hmac(self::ENCRYPT_ALGORITHM, $this->signatureSalt.$encryptedPath, $this->signatureKey, true);
-        if ($binarySignature === false) {
-            throw new SharpException('Could not generate binary signature.');
-        }
-        $signature = HTTPUtil::base64UrlEncode($binarySignature);
-
-        return sprintf("/%s%s", $signature, $encryptedPath);
-    }
-
-    /**
-     * Encrypts the given data with the specified key.
-     * @param string $data The data to be encrypted.
-     * @param string $key The encryption key.
-     * @return string The encrypted data with the authentication tag appended.
-     * @throws SharpException If encryption fails.
-     */
-    private static function encryptData(string $data, string $key)
-    {
-        $iv = openssl_random_pseudo_bytes(openssl_cipher_iv_length(self::CIPHER));
-        $tag = ''; // Initialize the authentication tag variable
-        $tagLength = 16; // The standard tag length for AES-GCM is 16 bytes
-        $encrypted = openssl_encrypt(
-            $data,
-            self::CIPHER,
-            $key,
-            OPENSSL_RAW_DATA,
-            $iv,
-            $tag,
-            '', // Additional Authenticated Data, not used here
-            $tagLength
-        );
-        if ($encrypted === false) {
-            throw new SharpException('Encryption failed.');
-        }
-
-        return $iv.$encrypted.$tag;
+        return $this->hash->generateEncryptedUrl($originalImageUrl);
     }
 }

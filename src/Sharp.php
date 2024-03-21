@@ -98,6 +98,6 @@ class Sharp
             return $encryptedPath;
         });
 
-        return $this->hash->generateEncryptedUrl($originalImageUrl);
+        return $this->hash->generateURL($originalImageUrl);
     }
 }
